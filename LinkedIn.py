@@ -3,14 +3,43 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from openpyxl import Workbook
 import sys, time, math
 
+
+class visibility_of_text(object):
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        text = driver.find_element(*self.locator).text
+        return True if len(text) != 0 else False
+
+
+class len_of_container(object):
+    def __init__(self, locator, count):
+        self.locator = locator
+        self.count = count
+
+    def __call__(self, driver):
+        container = driver.find_elements(*self.locator)
+        return True if len(container) == self.count else False
+
+
 # input: job position, job location, number of results, LinkedIn account username, LinkedIn account password
 # setting language to en as default
-option = webdriver.ChromeOptions()
-option.add_argument("--lang=en-US")
-driver = webdriver.Chrome(chrome_options=option)
+options = Options()
+options.add_argument("--lang=en-US")
+options.add_argument('--blink-settings=imagesEnabled=false')
+caps = DesiredCapabilities().CHROME
+caps["pageLoadStrategy"] = "normal"
+driver = webdriver.Chrome(
+    options=options,
+    desired_capabilities=caps,
+    executable_path=
+    '/Users/haleylai/.pyenv/versions/3.8.3/envs/venv3.8.3/bin/chromedriver')
 # driver = webdriver.Chrome()
 
 wait = WebDriverWait(driver, 10)
@@ -59,11 +88,14 @@ while jobCount < int(sys.argv[3]):
         info += card[1:3] if card[1] != " Promoted" else card[2:4]
         content = driver.find_element_by_class_name(
             'jobs-description__container')
-        # TODO: some jobs' decription cannot be found in 'span' tage name
-        wait.until(EC.visibility_of(
-            (content.find_element_by_tag_name('span'))))
-        info += [content.find_element_by_tag_name('span').text]
-        ws.append(info)
+        try:
+            contentWait = WebDriverWait(content, 10)
+            contentWait.until(visibility_of_text((By.TAG_NAME, "span")))
+            info += [content.find_element_by_tag_name('span').text]
+            ws.append(info)
+        except:
+            # driver.refresh()
+            continue
         jobCount += 1
         if jobCount == int(sys.argv[3]): break
     pagination = driver.find_element(By.XPATH,
