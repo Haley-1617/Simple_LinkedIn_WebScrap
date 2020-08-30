@@ -32,7 +32,7 @@ class len_of_container(object):
 # setting language to en as default
 options = Options()
 options.add_argument("--lang=en-US")
-options.add_argument('--blink-settings=imagesEnabled=false')
+# options.add_argument('--blink-settings=imagesEnabled=false')
 caps = DesiredCapabilities().CHROME
 caps["pageLoadStrategy"] = "normal"
 driver = webdriver.Chrome(
@@ -59,7 +59,7 @@ usrname.send_keys(sys.argv[4])
 pwd = driver.find_element_by_id("password")
 pwd.send_keys(sys.argv[5])
 driver.find_element_by_tag_name('button').click()
-# driver.find_element_by_class_name('msg-overlay-bubble-header__button').click()
+driver.find_element_by_class_name('msg-overlay-bubble-header__button').click()
 
 # Create workbook
 wb = Workbook()
@@ -82,19 +82,22 @@ while jobCount < int(sys.argv[3]):
         jobContainer = driver.find_elements_by_class_name('job-card-container')
     for job in jobContainer:
         # TODO: need to fix the click position, sometimes it'll direct to company's website
-        job.find_element_by_class_name("job-card-list__title").click()
+        jobwait = WebDriverWait(job, 10)
+        jobwait.until(
+            EC.element_to_be_clickable(
+                (By.CLASS_NAME, "job-card-list__title"))).click()
+        # job.find_element_by_class_name("job-card-list__title").click()
         card = list(job.text.split('\n'))
         info = [card[0]]
         info += card[1:3] if card[1] != " Promoted" else card[2:4]
         content = driver.find_element_by_class_name(
             'jobs-description__container')
         try:
-            contentWait = WebDriverWait(content, 10)
+            contentWait = WebDriverWait(content, 30)
             contentWait.until(visibility_of_text((By.TAG_NAME, "span")))
             info += [content.find_element_by_tag_name('span').text]
             ws.append(info)
         except:
-            # driver.refresh()
             continue
         jobCount += 1
         if jobCount == int(sys.argv[3]): break
@@ -104,4 +107,4 @@ while jobCount < int(sys.argv[3]):
     pagination.find_element(By.XPATH, "//button[@aria-label='Page %d']" %
                             pageIdx).click()
 wb.save('LinkedIn.xlsx')
-driver.close()
+driver.quit()
